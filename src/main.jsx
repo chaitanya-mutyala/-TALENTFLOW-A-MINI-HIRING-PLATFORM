@@ -1,29 +1,32 @@
-// src/main.jsx (FINAL FIX for Initialization Order)
+// src/main.jsx (FIXED for Demo Deployment)
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-// Import the seed function which now includes db.open()
 import { seedDatabase } from './db'; 
-
-// Initialize the Query Client (assuming this is done globally elsewhere, 
-// or define it here if not)
-// const queryClient = new QueryClient(); 
+// NOTE: You must also ensure that the mockServiceWorker.js file is accessible 
+// in the root of your Vercel deployment's output.
 
 // --- Application Preparation Function ---
 async function prepareApp() {
     // 1. CRITICAL: Await database setup (opening and seeding) first.
-    // This guarantees db.jobs is defined when the first API handler runs.
     console.log("Preparing database and seeding data...");
     await seedDatabase(); 
 
     // 2. Enable Mocking (MSW)
-    if (process.env.NODE_ENV === 'development') {
-        // Ensure MSW imports use the robust syntax (import * as module)
+    // 💡 FIX: Start MSW if we are NOT in a production build, OR if we are running 
+    // in the browser (client-side), which implies we need the mocks for the demo.
+    
+    // Check if the code is running in the browser (window is defined)
+    if (typeof window !== 'undefined') {
         const mswModule = await import('./mocks/browser');
         const { worker } = mswModule; 
         
-        await worker.start({ onUnhandledRequest: 'bypass' }); 
+        // Start the worker. Use the URL property to define the path to the service worker.
+        await worker.start({ 
+            serviceWorker: { url: '/mockServiceWorker.js' },
+            onUnhandledRequest: 'bypass' 
+        }); 
         console.log("MSW worker started and ready to intercept requests.");
     }
 }
@@ -38,5 +41,6 @@ prepareApp().then(() => {
     </React.StrictMode>
   );
 }).catch(err => {
+    // The startup error (like the Dexie TypeError) is often caught here.
     console.error("Failed to initialize application:", err);
 });
