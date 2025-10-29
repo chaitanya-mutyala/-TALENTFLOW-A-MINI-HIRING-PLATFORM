@@ -137,8 +137,7 @@ The application architecture emphasizes **robustness**, **testability**, and **o
 └── 📄 README.md        # This file
 
 
-
-
+```
 ---
 
 ## 🤝 Contribution
@@ -153,4 +152,5 @@ Feel free to **fork** this repository and submit a **pull request** for new feat
 This project is released under the **MIT License**.
 
 ---
-✨ *Crafted with care as part of a React technical assignment to simulate a full hiring workflow for ENTNT.*
+
+✨ *Crafted with care as part of a React technical assignment to simulate a full hiring workflow for ENTNT assignment.*
