@@ -18,6 +18,16 @@ All data is stored locally using **IndexedDB** (via Dexie.js), and network reque
 
 ---
 
+> ⚠️ **Note:**  
+> The **Candidate Profile page** may not load correctly on **Vercel deployment** .  
+> However, it works **perfectly on localhost** during local development.  
+>
+> To demonstrate full functionality, a **video demo** has been provided showing the app running locally:  
+> 🎥 [▶️ Watch Demo on Google Drive](https://drive.google.com/file/d/1eOme_hv5Vxp78Cyyq0vd9WNkULhAq2-F/view?usp=sharing)
+
+---
+
+
 ## 🛠️ Setup and Installation
 
 ### **Prerequisites**
@@ -27,8 +37,8 @@ All data is stored locally using **IndexedDB** (via Dexie.js), and network reque
 ### **Installation Steps**
 ```bash
 # Clone the repository
-git clone [https://github.com/chaitanya-mutyala/-TALENTFLOW-A-MINI-HIRING-PLATFORM]
-cd talentflow
+git clone https://github.com/chaitanya-mutyala/-TALENTFLOW-A-MINI-HIRING-PLATFORM.git
+cd "-TALENTFLOW-A-MINI-HIRING-PLATFORM"
 
 # Install dependencies
 #pip install -r requirements.txt (deleted requirements.txt due to vercel running it install following
@@ -72,7 +82,7 @@ The application architecture emphasizes **robustness**, **testability**, and **o
 
 ### **B. Candidates Flow**
 - **Virtualized List** – Displays 1,000+ seeded candidates efficiently; supports search and stage-based filters.
-- **Kanban Board** – Drag-and-drop transitions between stages: *applied → screen  → offer → hired → rejected*.
+- **Kanban Board** – Drag-and-drop transitions between stages: *applied → screen → offer → hired → rejected*.
 - **Profile Route** – `/candidates/:id` shows full details and timeline.
 
 ### **C. Assessments Flow**
@@ -103,6 +113,27 @@ The application architecture emphasizes **robustness**, **testability**, and **o
 - **Drag & Drop:** @dnd-kit
 - **Virtualized Rendering:** react-window
 - **Styling:** Tailwind CSS
+
+---
+
+## 📂 Project Structure
+-TALENTFLOW-A-MINI-HIRING-PLATFORM
+┣ 📁 public/        # Static assets (logo, mockServiceWorker.js, etc.)
+┣ 📁 src/
+┃ ┣ 📁 api/         # Custom API logic (e.g., jobs.js)
+┃ ┣ 📁 hooks/       # Custom React hooks
+┃ ┣ 📁 components/  # Reusable UI components
+┃ ┣ 📁 pages/       # Route-based pages
+┃ ┣ 📁 mocks/       # MSW handlers & mock DB setup
+┃ ┣ 📄 db.js        # Dexie database setup and seeding
+┃ ┣ 📄 main.jsx     # App entry and mock initialization
+┃ ┗ 📄 App.jsx      # Main app routes
+┣ 📄 index.html
+┣ 📄 package.json
+┣ 📄 .gitignore
+┗ 📄 README.md      # this file
+
+
 
 ---
 

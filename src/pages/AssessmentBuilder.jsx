@@ -1,8 +1,9 @@
 import React from 'react';
+import { useParams, NavLink } from 'react-router-dom';
 import { useAssessmentBuilder, QuestionTypes } from '../hooks/useAssessmentBuilder';
 import { v4 as uuidv4 } from 'uuid';
 
-const MOCK_JOB_ID = 1;
+
 
 // --- Options Management Component ---
 const OptionsControl = ({ question, sectionId, updateQuestion }) => {
@@ -227,7 +228,7 @@ const AssessmentPreview = ({ assessment }) => {
 
 // --- Main Builder Page ---
 export default function AssessmentBuilder() {
-  const jobId = MOCK_JOB_ID;
+  const { jobId } = useParams();
 
   const {
     assessment,
@@ -250,7 +251,7 @@ export default function AssessmentBuilder() {
 
   return (
     <div style={{ padding: '20px' }}>
-      <h1>Assessment Builder for Job ID: {jobId}</h1>
+      <h1>Assessment Builder</h1>
 
       <div
         style={{
@@ -324,6 +325,25 @@ export default function AssessmentBuilder() {
         <div>
           <h2>Live Preview</h2>
           <AssessmentPreview assessment={assessment} />
+          {/* ✅ Next Assessment Navigation */}
+{Number(jobId) < 3 && (
+  <NavLink 
+    to={`/assessments/${Number(jobId) + 1}/builder`} 
+    style={{ 
+      display: 'inline-block',
+      marginTop: '20px',
+      padding: '10px 20px', 
+      backgroundColor: '#28a745', 
+      color: 'white', 
+      borderRadius: '4px', 
+      textDecoration: 'none',
+      fontWeight: 'bold'
+    }}
+  >
+    Next Assessment ➜
+  </NavLink>
+)}
+
         </div>
       </div>
     </div>

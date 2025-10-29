@@ -139,7 +139,7 @@ export function generateSeedAssessments(jobIds) {
 
     assessments.push({
       jobId: jobId,
-      name: `${sectionData.title} - Assignment for Job #${jobId}`,
+      name: `${sectionData.title} - Assignment`,
       sections: [section],
       createdAt: Date.now(),
     });

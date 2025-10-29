@@ -1,34 +1,21 @@
 // src/pages/AssessmentRuntime.jsx
-
-import React, { useState, useMemo } from 'react';
+import { useParams, NavLink } from 'react-router-dom';
+import React, { useMemo } from 'react';
 import { useAssessmentRuntime } from '../hooks/useAssessmentRuntime';
-// Assuming QuestionTypes is exported from your useAssessmentBuilder file for reuse
-import { QuestionTypes } from '../hooks/useAssessmentBuilder'; 
+import { QuestionTypes } from '../hooks/useAssessmentBuilder';
 
-// Mock data for runtime testing
-const MOCK_JOB_ID = 1; 
-const MOCK_CANDIDATE_ID = 42; // Example candidate ID
-
-// --- Component Helpers ---
-
-// Logic to determine if a question should be visible (reused from builder preview)
+// --- Helper Functions ---
 const isQuestionVisible = (question, allQuestionsMap, answers) => {
     if (!question.conditional) return true;
-    
     const { dependsOn, condition } = question.conditional;
     if (!dependsOn) return true;
 
-    // Get the answer for the dependency question
     const dependencyAnswer = answers[dependsOn];
-    
-    // Simplified evaluation: Check if the dependency answer equals the required value 
-    // (Real-world would use a robust expression evaluator)
     const requiredValue = condition.replace(/[=']/g, '').trim(); 
-    
     return String(dependencyAnswer) === String(requiredValue);
 };
 
-// Component to render the actual question input
+// --- Input Renderer ---
 const QuestionInput = ({ question, answer, updateAnswer }) => {
     const baseProps = {
         name: question.id,
@@ -41,15 +28,9 @@ const QuestionInput = ({ question, answer, updateAnswer }) => {
         case QuestionTypes.SHORT_TEXT:
             return <input {...baseProps} type="text" maxLength={100} />;
         case QuestionTypes.LONG_TEXT:
-            return <textarea {...baseProps} onChange={(e) => updateAnswer(question.id, e.target.value)} rows={4} />;
+            return <textarea {...baseProps} rows={4} />;
         case QuestionTypes.NUMERIC:
-            return <input 
-                        {...baseProps} 
-                        type="number" 
-                        min={question.range?.min} 
-                        max={question.range?.max}
-                        onChange={(e) => updateAnswer(question.id, e.target.value)} 
-                    />;
+            return <input {...baseProps} type="number" min={question.range?.min} max={question.range?.max} />;
         case QuestionTypes.SINGLE_CHOICE:
             return (
                 <div>
@@ -66,16 +47,14 @@ const QuestionInput = ({ question, answer, updateAnswer }) => {
                 </div>
             );
         case QuestionTypes.MULTI_CHOICE:
-            // Multi-choice logic requires handling the answer as an array
             const isChecked = (value) => (answer || []).includes(value);
             const handleMultiChange = (value) => {
-                const currentAnswers = answer || [];
-                const newAnswers = isChecked(value) 
-                    ? currentAnswers.filter(v => v !== value) 
-                    : [...currentAnswers, value];
-                updateAnswer(question.id, newAnswers);
+                const current = answer || [];
+                const updated = isChecked(value)
+                    ? current.filter(v => v !== value)
+                    : [...current, value];
+                updateAnswer(question.id, updated);
             };
-
             return (
                 <div>
                     {question.options?.map(opt => (
@@ -90,19 +69,19 @@ const QuestionInput = ({ question, answer, updateAnswer }) => {
                 </div>
             );
         case QuestionTypes.FILE_UPLOAD:
-            return <input type="file" disabled={true} placeholder="(File submission is stubbed)" />;
+            return <input type="file" disabled placeholder="(File upload not implemented)" />;
         default:
             return null;
     }
 };
 
-
-// --- Main Runtime Component ---
+// --- Main Component ---
 export default function AssessmentRuntime() {
-    // NOTE: In a router, jobId and candidateId would come from URL params or context
-    const jobId = MOCK_JOB_ID; 
-    const candidateId = MOCK_CANDIDATE_ID;
-    
+    const { jobId, candidateId } = useParams();
+    const numericJobId = Number(jobId);
+    const nextJobId = numericJobId + 1;
+    const lastJobId = 3; // 🟡 Change this based on how many jobs exist
+
     const { 
         assessment, 
         answers, 
@@ -111,32 +90,22 @@ export default function AssessmentRuntime() {
         isAssessmentLoading, 
         isSubmitting, 
         submitError 
-    } = useAssessmentRuntime(jobId, candidateId);
+    } = useAssessmentRuntime(numericJobId, candidateId);
 
-    // Create a flat map of all questions for conditional logic lookup
     const allQuestionsMap = useMemo(() => {
-        return assessment?.sections.flatMap(s => s.questions).reduce((map, q) => {
-            map[q.id] = q;
-            return map;
-        }, {}) || {};
+        return assessment?.sections
+            .flatMap(s => s.questions)
+            .reduce((map, q) => ((map[q.id] = q), map), {}) || {};
     }, [assessment]);
 
-    if (isAssessmentLoading) {
-        return <div style={{ padding: '20px' }}>Loading Assessment...</div>;
-    }
-
-    if (submitError) {
-         return <div style={{ color: 'red', padding: '20px' }}>An error occurred: {submitError.message}</div>;
-    }
-
-    if (!assessment || !assessment.sections.length) {
-        return <div style={{ padding: '20px' }}>No assessment found for this job.</div>;
-    }
+    if (isAssessmentLoading) return <div style={{ padding: '20px' }}>Loading Assessment...</div>;
+    if (submitError) return <div style={{ color: 'red', padding: '20px' }}>Error: {submitError.message}</div>;
+    if (!assessment || !assessment.sections.length) return <div style={{ padding: '20px' }}>No assessment found.</div>;
 
     return (
         <div style={{ padding: '40px', maxWidth: '800px', margin: '0 auto', border: '1px solid #ddd', borderRadius: '8px' }}>
             <h1>Assessment: {assessment.name}</h1>
-            <p>Please complete the following form for job {jobId}.</p>
+            <p>Please complete the following form.</p>
             
             <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
                 {assessment.sections.map(section => (
@@ -145,7 +114,6 @@ export default function AssessmentRuntime() {
                         
                         {section.questions.map(question => {
                             const isVisible = isQuestionVisible(question, allQuestionsMap, answers);
-                            
                             return (
                                 <div 
                                     key={question.id} 
@@ -159,7 +127,6 @@ export default function AssessmentRuntime() {
                                     <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>
                                         {question.label} {question.required && <span style={{ color: 'red' }}>*</span>}
                                     </label>
-                                    
                                     <QuestionInput
                                         question={question}
                                         answer={answers[question.id]}
@@ -171,13 +138,31 @@ export default function AssessmentRuntime() {
                     </div>
                 ))}
                 
-                <button 
-                    type="submit" 
-                    disabled={isSubmitting} 
-                    style={{ padding: '10px 20px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px' }}
-                >
-                    {isSubmitting ? 'Submitting...' : 'Submit Assessment'}
-                </button>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <button 
+                        type="submit" 
+                        disabled={isSubmitting} 
+                        style={{ padding: '10px 20px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px' }}
+                    >
+                        {isSubmitting ? 'Submitting...' : 'Submit Assessment'}
+                    </button>
+
+                    {/* ✅ Conditionally render "Next" button */}
+                    {numericJobId < lastJobId && (
+                        <NavLink 
+                            to={`/assessments/${nextJobId}/runtime/${candidateId}`} 
+                            style={{ 
+                                padding: '10px 20px', 
+                                backgroundColor: '#28a745', 
+                                color: 'white', 
+                                borderRadius: '4px', 
+                                textDecoration: 'none'
+                            }}
+                        >
+                            Next ➜
+                        </NavLink>
+                    )}
+                </div>
             </form>
         </div>
     );
