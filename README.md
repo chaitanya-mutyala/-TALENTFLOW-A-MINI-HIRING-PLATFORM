@@ -117,21 +117,25 @@ The application architecture emphasizes **robustness**, **testability**, and **o
 ---
 
 ## 📂 Project Structure
+
+```plaintext
 -TALENTFLOW-A-MINI-HIRING-PLATFORM
-┣ 📁 public/        # Static assets (logo, mockServiceWorker.js, etc.)
-┣ 📁 src/
-┃ ┣ 📁 api/         # Custom API logic (e.g., jobs.js)
-┃ ┣ 📁 hooks/       # Custom React hooks
-┃ ┣ 📁 components/  # Reusable UI components
-┃ ┣ 📁 pages/       # Route-based pages
-┃ ┣ 📁 mocks/       # MSW handlers & mock DB setup
-┃ ┣ 📄 db.js        # Dexie database setup and seeding
-┃ ┣ 📄 main.jsx     # App entry and mock initialization
-┃ ┗ 📄 App.jsx      # Main app routes
-┣ 📄 index.html
-┣ 📄 package.json
-┣ 📄 .gitignore
-┗ 📄 README.md      # this file
+├── 📁 public/        # Static assets (logo, mockServiceWorker.js, etc.)
+├── 📁 src/
+│   ├── 📁 api/         # Custom API logic (e.g., jobs.js)
+│   ├── 📁 hooks/       # Custom React hooks
+│   ├── 📁 components/  # Reusable UI components
+│   ├── 📁 pages/       # Route-based pages
+│   ├── 📁 mocks/       # MSW handlers & mock DB setup
+│   ├── 📁 comments/    # Developer notes or helper comments
+│   ├── 📄 db.js        # Dexie database setup and seeding
+│   ├── 📄 main.jsx     # App entry and mock initialization
+│   └── 📄 App.jsx      # Main app routes
+├── 📄 index.html
+├── 📄 package.json
+├── 📄 .gitignore
+└── 📄 README.md        # This file
+
 
 
 
