@@ -1,0 +1,27 @@
+# TalentFlow – Mini Hiring Platform
+# This project uses Node.js for front-end development.
+# These entries are for documentation purposes to satisfy pip install command.
+
+# Required system tools
+nodejs>=18.0.0
+npm>=9.0.0
+
+# React application dependencies (install via npm)
+react
+react-dom
+react-router-dom
+@tanstack/react-query
+dexie
+msw
+
+# Development dependencies
+vite
+@vitejs/plugin-react
+eslint
+
+# Optional styling (if TailwindCSS used)
+tailwindcss
+postcss
+autoprefixer
+lucide-react
+clsx

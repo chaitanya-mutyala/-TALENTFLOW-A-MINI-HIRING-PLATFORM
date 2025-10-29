@@ -1,178 +1,169 @@
-// src/mocks/jobHandlers.js (FINAL CORRECT VERSION)
+// src/mocks/jobHandlers.js
+import { http, HttpResponse } from 'msw'
+import { db, slugify } from '../db'
+import Dexie from 'dexie'
 
-import * as mswModule from 'msw';
-const { rest } = mswModule;
+// --- Utility Functions ---
+const injectLatency = async () => {
+  await new Promise(r => setTimeout(r, Math.random() * 1000 + 200)) // 200–1200ms
+}
+const shouldFail = () => Math.random() < 0.08
 
-import { db, slugify } from '../db'; 
-import Dexie from 'dexie'; // Required for Dexie.DEXIE_ADD in reorder logic
-
-// --- Utility Functions for Simulation (Unchanged) ---
-const injectLatency = (ctx) => {
-    return ctx.delay(Math.random() * 1000 + 200); // 200-1200ms delay
-};
-const shouldFail = () => Math.random() < 0.08;
-
-// Helper to safely open DB (simplifies code in handlers)
 const ensureDbOpen = async () => {
-    try {
-        await db.open(); 
-    } catch (e) {
-        // Ignore, database might already be open or opening
-    }
-};
+  try {
+    await db.open()
+  } catch {
+    // ignore if already open
+  }
+}
 
-// --- Job API Handlers ---
-
+// --- Handlers ---
 export const jobHandlers = [
-    // 1. GET /jobs (Fetch Jobs List with Filters and Pagination)
-    rest.get('/jobs', async (req, res, ctx) => {
-        await injectLatency(ctx);
-        await ensureDbOpen(); // 💡 FIX APPLIED
+  // ✅ 1. GET /jobs - Fetch paginated & filtered jobs
+  http.get('/jobs', async ({ request }) => {
+    await injectLatency()
+    await ensureDbOpen()
 
-        const search = req.url.searchParams.get('search')?.toLowerCase() || '';
-        const status = req.url.searchParams.get('status'); 
-        const page = parseInt(req.url.searchParams.get('page')) || 1;
-        const pageSize = parseInt(req.url.searchParams.get('pageSize')) || 10;
-        const sort = req.url.searchParams.get('sort') || 'order'; // Default sort by order
+    const url = new URL(request.url)
+    const search = url.searchParams.get('search')?.toLowerCase() || ''
+    const status = url.searchParams.get('status')
+    const page = parseInt(url.searchParams.get('page')) || 1
+    const pageSize = parseInt(url.searchParams.get('pageSize')) || 10
+    const sort = url.searchParams.get('sort') || 'order'
 
-        // 1. Get all jobs and sort them in memory
-        const allJobs = await db.jobs.orderBy(sort).toArray(); 
-        
-        // 2. Apply Filtering
-        const filteredJobs = allJobs.filter(job => {
-            const matchesStatus = !status || job.status === status;
-            const matchesSearch = 
-                job.title.toLowerCase().includes(search) || 
-                job.description.toLowerCase().includes(search);
-            
-            return matchesStatus && matchesSearch;
-        });
+    const allJobs = await db.jobs.orderBy(sort).toArray()
 
-        // 3. Apply Pagination
-        const totalCount = filteredJobs.length;
-        const start = (page - 1) * pageSize;
-        const pagedJobs = filteredJobs.slice(start, start + pageSize);
+    const filtered = allJobs.filter(job => {
+      const matchesStatus = !status || job.status === status
+      const matchesSearch =
+        job.title.toLowerCase().includes(search) ||
+        job.description.toLowerCase().includes(search)
+      return matchesStatus && matchesSearch
+    })
 
-        // 4. Return Response
-        return res(
-            ctx.status(200),
-            ctx.json({
-                jobs: pagedJobs,
-                page,
-                pageSize,
-                totalCount,
-                totalPages: Math.ceil(totalCount / pageSize)
-            })
-        );
-    }),
+    const totalCount = filtered.length
+    const start = (page - 1) * pageSize
+    const paged = filtered.slice(start, start + pageSize)
 
-    // 2. POST /jobs (Create New Job)
-    rest.post('/jobs', async (req, res, ctx) => {
-        await injectLatency(ctx);
-        if (shouldFail()) {
-            return res(ctx.status(500), ctx.json({ error: 'Simulated server error during creation' }));
-        }
-        await ensureDbOpen(); // 💡 FIX APPLIED
+    return HttpResponse.json({
+      jobs: paged,
+      page,
+      pageSize,
+      totalCount,
+      totalPages: Math.ceil(totalCount / pageSize)
+    })
+  }),
 
-        const { title, tags, description } = await req.json();
-        
-        // Validation: Title required
-        if (!title) {
-            return res(ctx.status(400), ctx.json({ error: 'Title is required' }));
-        }
-        
-        // Validation: Unique Slug
-        const newSlug = slugify(title); 
-        const existingJob = await db.jobs.where({ slug: newSlug }).first(); 
-        if (existingJob) {
-            return res(ctx.status(409), ctx.json({ error: 'Job title already exists (slug conflict)' }));
-        }
+  // ✅ 2. POST /jobs - Create a new job
+  http.post('/jobs', async ({ request }) => {
+    await injectLatency()
+    if (shouldFail()) {
+      return HttpResponse.json(
+        { error: 'Simulated server error during creation' },
+        { status: 500 }
+      )
+    }
 
-        const maxOrder = (await db.jobs.orderBy('order').last())?.order || 0; 
+    await ensureDbOpen()
+    const { title, tags, description } = await request.json()
 
-        const newJob = {
-            title,
-            slug: newSlug,
-            tags: tags || [],
-            description: description || '',
-            status: 'active', 
-            order: maxOrder + 1,
-        };
+    if (!title) {
+      return HttpResponse.json({ error: 'Title is required' }, { status: 400 })
+    }
 
-        const id = await db.jobs.add(newJob); 
+    const newSlug = slugify(title)
+    const existing = await db.jobs.where({ slug: newSlug }).first()
+    if (existing) {
+      return HttpResponse.json(
+        { error: 'Job title already exists (slug conflict)' },
+        { status: 409 }
+      )
+    }
 
-        return res(
-            ctx.status(201),
-            ctx.json({ id, ...newJob })
-        );
-    }),
+    const maxOrder = (await db.jobs.orderBy('order').last())?.order || 0
+    const newJob = {
+      title,
+      slug: newSlug,
+      tags: tags || [],
+      description: description || '',
+      status: 'active',
+      order: maxOrder + 1,
+      createdAt: Date.now(),
+    }
 
-    // 3. PATCH /jobs/:id (Edit/Archive/Unarchive)
-    rest.patch('/jobs/:id', async (req, res, ctx) => {
-        await injectLatency(ctx);
-        if (shouldFail()) {
-            return res(ctx.status(500), ctx.json({ error: 'Simulated server error during update' }));
-        }
-        await ensureDbOpen(); // 💡 FIX APPLIED
+    const id = await db.jobs.add(newJob)
+    return HttpResponse.json({ id, ...newJob }, { status: 201 })
+  }),
 
-        const id = parseInt(req.params.id);
-        const updates = await req.json();
+  // ✅ 3. PATCH /jobs/:id - Update job
+  http.patch('/jobs/:id', async ({ params, request }) => {
+    await injectLatency()
+    if (shouldFail()) {
+      return HttpResponse.json(
+        { error: 'Simulated server error during update' },
+        { status: 500 }
+      )
+    }
 
-        const job = await db.jobs.get(id); 
+    await ensureDbOpen()
+    const id = parseInt(params.id)
+    const updates = await request.json()
 
-        if (!job) {
-            return res(ctx.status(404), ctx.json({ error: 'Job not found' }));
-        }
-        
-        // Handle title change validation (requires new unique slug)
-        if (updates.title && updates.title !== job.title) {
-            const newSlug = slugify(updates.title); 
-            const conflict = await db.jobs.where({ slug: newSlug }).and(j => j.id !== id).first(); 
-            if (conflict) {
-                return res(ctx.status(409), ctx.json({ error: 'New title conflicts with existing job slug.' }));
-            }
-            updates.slug = newSlug;
-        }
+    const job = await db.jobs.get(id)
+    if (!job) {
+      return HttpResponse.json({ error: 'Job not found' }, { status: 404 })
+    }
 
-        // Apply updates to IndexedDB (Update method in Dexie)
-        await db.jobs.update(id, updates); 
-        
-        // Return the updated job (or just success confirmation)
-        return res(ctx.status(200), ctx.json({ id, ...job, ...updates }));
-    }),
-    
-    // 4. PATCH /jobs/:id/reorder (Drag-and-Drop Order Change)
-    rest.patch('/jobs/:id/reorder', async (req, res, ctx) => {
-        await injectLatency(ctx);
-        
-        // Inject Occasional 500 Error (15% rate for critical rollback test)
-        if (Math.random() < 0.15) { 
-            console.error('MSW: Simulated 500 failure for reorder request.');
-            return res(ctx.status(500), ctx.json({ error: 'Simulated rollback test failure' }));
-        }
-        await ensureDbOpen(); // 💡 FIX APPLIED
+    // Handle title change (unique slug)
+    if (updates.title && updates.title !== job.title) {
+      const newSlug = slugify(updates.title)
+      const conflict = await db.jobs
+        .where({ slug: newSlug })
+        .and(j => j.id !== id)
+        .first()
+      if (conflict) {
+        return HttpResponse.json(
+          { error: 'New title conflicts with existing job slug' },
+          { status: 409 }
+        )
+      }
+      updates.slug = newSlug
+    }
 
-        const jobId = parseInt(req.params.id);
-        const { fromOrder, toOrder } = await req.json();
+    await db.jobs.update(id, updates)
+    return HttpResponse.json({ id, ...job, ...updates }, { status: 200 })
+  }),
 
-        // 1. Start a transaction for atomic update
-        await db.transaction('rw', db.jobs, async () => { 
-            // Reordering logic depends on direction
-            if (fromOrder < toOrder) {
-                // Moving down: Decrement order of jobs between fromOrder and toOrder
-                await db.jobs.where('order').between(fromOrder + 1, toOrder, true, true)
-                    .modify({ order: Dexie.DEXIE_ADD(-1) });
-            } else if (fromOrder > toOrder) {
-                // Moving up: Increment order of jobs between toOrder and fromOrder
-                await db.jobs.where('order').between(toOrder, fromOrder - 1, true, true)
-                    .modify({ order: Dexie.DEXIE_ADD(1) });
-            }
+  // ✅ 4. PATCH /jobs/:id/reorder - Simulate drag-drop reordering
+  http.patch('/jobs/:id/reorder', async ({ params, request }) => {
+    await injectLatency()
+    if (Math.random() < 0.15) {
+      console.error('MSW: Simulated 500 failure for reorder request.')
+      return HttpResponse.json(
+        { error: 'Simulated rollback test failure' },
+        { status: 500 }
+      )
+    }
 
-            // 2. Set the target job to the new order
-            await db.jobs.update(jobId, { order: toOrder });
-        });
-        
-        // Return success
-        return res(ctx.status(200), ctx.json({ success: true }));
-    }),
-];
+    await ensureDbOpen()
+    const jobId = parseInt(params.id)
+    const { fromOrder, toOrder } = await request.json()
+
+    await db.transaction('rw', db.jobs, async () => {
+      if (fromOrder < toOrder) {
+        await db.jobs
+          .where('order')
+          .between(fromOrder + 1, toOrder, true, true)
+          .modify({ order: Dexie.DEXIE_ADD(-1) })
+      } else if (fromOrder > toOrder) {
+        await db.jobs
+          .where('order')
+          .between(toOrder, fromOrder - 1, true, true)
+          .modify({ order: Dexie.DEXIE_ADD(1) })
+      }
+      await db.jobs.update(jobId, { order: toOrder })
+    })
+
+    return HttpResponse.json({ success: true }, { status: 200 })
+  }),
+]

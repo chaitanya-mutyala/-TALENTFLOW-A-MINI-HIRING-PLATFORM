@@ -183,7 +183,7 @@ export default function JobsBoard() {
 
     return (
         <div style={{ padding: '20px' }}>
-            <h1>Jobs Board (Mini Hiring Platform)</h1>
+            <h1>Jobs Board</h1>
             {loadingMessage && <p style={{ color: 'blue' }}>{loadingMessage}</p>}
             
             <button onClick={handleOpenCreate} style={{ marginBottom: '20px' }}>
@@ -192,7 +192,7 @@ export default function JobsBoard() {
             
             {/* Modal for Create/Edit */}
             {isModalOpen && (
-                <div style={{ position: 'fixed', top: '50px', left: '50%', transform: 'translateX(-50%)', backgroundColor: 'white', padding: '20px', zIndex: 10, border: '1px solid #000', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                <div style={{ height:'450px', position: 'fixed', top: '250px', left: '40%', transform: 'translateX(-50%)', backgroundColor: 'white', padding: '20px', zIndex: 10, border: '1px solid #000', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
                     <JobFormModal job={jobToEdit} onClose={handleCloseModal} />
                 </div>
             )}

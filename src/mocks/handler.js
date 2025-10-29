@@ -7,5 +7,6 @@ import { assessmentHandlers } from './assessmentHandlers'; // NEW
 export const handlers = [
     ...jobHandlers,
     ...candidateHandlers,
-    ...assessmentHandlers, // NEW
+    ...assessmentHandlers, // NEWnpx msw init public/ --save
+
 ];

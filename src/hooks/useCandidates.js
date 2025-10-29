@@ -7,7 +7,6 @@ import { useQuery } from '@tanstack/react-query';
 export const CandidateStages = {
     APPLIED: 'applied',
     SCREEN: 'screen',
-    TECH: 'tech',
     OFFER: 'offer',
     HIRED: 'hired',
     REJECTED: 'rejected',

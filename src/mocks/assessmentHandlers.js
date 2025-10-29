@@ -1,69 +1,92 @@
-// src/mocks/assessmentHandlers.js (FINAL FIX)
+import { http, HttpResponse, delay } from 'msw';
+import { db } from '../db';
 
-import * as mswModule from 'msw';
-const { rest } = mswModule;
-import { db } from '../db'; 
-
-// Helper functions (re-use ensureDbOpen from jobHandlers or define globally)
-const injectLatency = (ctx) => { return ctx.delay(Math.random() * 1000 + 200); };
+// --- Helper utilities ---
+const randomLatency = async () => {
+  await delay(Math.random() * 1000 + 200);
+};
 const shouldFail = () => Math.random() < 0.08;
-const ensureDbOpen = async () => { try { await db.open(); } catch (e) {} };
+const ensureDbOpen = async () => {
+  try {
+    await db.open();
+  } catch {
+    // ignore if already open
+  }
+};
 
-
+// --- MSW Handlers ---
 export const assessmentHandlers = [
-    // 1. GET /assessments/:jobId (Get Assessment Builder Structure)
-    rest.get('/assessments/:jobId', async (req, res, ctx) => {
-        await injectLatency(ctx); 
-        await ensureDbOpen(); // 💡 FIX APPLIED
+  // 1️⃣ GET /assessments/:jobId → Fetch assessment for a job
+  http.get('/assessments/:jobId', async ({ params }) => {
+    await randomLatency();
+    await ensureDbOpen();
 
-        const jobId = parseInt(req.params.jobId);
+    const jobId = parseInt(params.jobId);
+    const assessment = await db.assessments.get(jobId);
 
-        const assessment = await db.assessments.get(jobId);
-        
-        if (!assessment) {
-            return res(ctx.status(404), ctx.json({ error: 'Assessment not found for this job.' }));
-        }
+    if (!assessment) {
+      return HttpResponse.json(
+        { error: 'Assessment not found for this job.' },
+        { status: 404 }
+      );
+    }
 
-        return res(ctx.status(200), ctx.json(assessment));
-    }),
-    
-    // 2. PUT /assessments/:jobId (Update/Save Assessment Builder Structure)
-    rest.put('/assessments/:jobId', async (req, res, ctx) => {
-        await injectLatency(ctx);
-        if (shouldFail()) {
-            return res(ctx.status(500), ctx.json({ error: 'Simulated server error saving assessment.' }));
-        }
-        await ensureDbOpen(); // 💡 FIX APPLIED
-        
-        const jobId = parseInt(req.params.jobId);
-        const assessmentStructure = await req.json();
+    return HttpResponse.json(assessment, { status: 200 });
+  }),
 
-        await db.assessments.put({ jobId, ...assessmentStructure });
+  // 2️⃣ PUT /assessments/:jobId → Save or update assessment
+  http.put('/assessments/:jobId', async ({ params, request }) => {
+    await randomLatency();
+    await ensureDbOpen();
 
-        return res(ctx.status(200), ctx.json({ success: true, jobId }));
-    }),
-    
-    // 3. POST /assessments/:jobId/submit (Candidate Submits Assessment Response)
-    rest.post('/assessments/:jobId/submit', async (req, res, ctx) => {
-        await injectLatency(ctx);
-        await ensureDbOpen(); // 💡 FIX APPLIED
-        
-        const jobId = parseInt(req.params.jobId);
-        const { candidateId, responses } = await req.json();
+    if (shouldFail()) {
+      return HttpResponse.json(
+        { error: 'Simulated server error saving assessment.' },
+        { status: 500 }
+      );
+    }
 
-        if (!candidateId || !responses) {
-             return res(ctx.status(400), ctx.json({ error: 'Missing candidateId or responses.' }));
-        }
+    const jobId = parseInt(params.jobId);
+    const data = await request.json();
 
-        const responseData = {
-            jobId,
-            candidateId,
-            responses,
-            submittedAt: Date.now(),
-        };
+    // ✅ Save without any conditional logic fields
+    const cleanedSections = data.sections.map(section => ({
+      ...section,
+      questions: section.questions.map(q => {
+        const { conditional, ...rest } = q;
+        return rest; // remove any leftover conditional data
+      }),
+    }));
 
-        const id = await db.responses.add(responseData);
+    await db.assessments.put({ jobId, ...data, sections: cleanedSections });
 
-        return res(ctx.status(201), ctx.json({ success: true, responseId: id }));
-    }),
+    return HttpResponse.json({ success: true, jobId }, { status: 200 });
+  }),
+
+  // 3️⃣ POST /assessments/:jobId/submit → Candidate submits responses
+  http.post('/assessments/:jobId/submit', async ({ params, request }) => {
+    await randomLatency();
+    await ensureDbOpen();
+
+    const jobId = parseInt(params.jobId);
+    const { candidateId, responses } = await request.json();
+
+    if (!candidateId || !responses) {
+      return HttpResponse.json(
+        { error: 'Missing candidateId or responses.' },
+        { status: 400 }
+      );
+    }
+
+    const responseData = {
+      jobId,
+      candidateId,
+      responses,
+      submittedAt: Date.now(),
+    };
+
+    const responseId = await db.responses.add(responseData);
+
+    return HttpResponse.json({ success: true, responseId }, { status: 201 });
+  }),
 ];

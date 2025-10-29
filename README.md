@@ -1,16 +1,115 @@
-# React + Vite
+# ⚡ TALENTFLOW – A Mini Hiring Platform (React Technical Assignment)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## 🧩 Project Overview
+**TalentFlow** is a front-end hiring platform simulation built with **React (Vite)**.  
+It replicates a modern applicant tracking system with **job management**, **candidate workflows**, and **assessment modules** — entirely powered by **local persistence** and **mock APIs**.
 
-Currently, two official plugins are available:
+All data is stored locally using **IndexedDB** (via Dexie.js), and network requests are simulated with **MSW (Mock Service Worker)** for a fully offline, yet realistic, development experience.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## 🚀 Live Demo & Repository
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| Aspect | Detail |
+|--------|---------|
+| **Live Demo Link** | [https://talentflow-a-mini-hiring-platform-omega.vercel.app/](https://talentflow-a-mini-hiring-platform-omega.vercel.app/) |
+| **Code Repository** | [https://github.com/chaitanya-mutyala/-TALENTFLOW-A-MINI-HIRING-PLATFORM](https://github.com/chaitanya-mutyala/-TALENTFLOW-A-MINI-HIRING-PLATFORM) |
+| **Contribution** | Made with 💙 by [Chaitanya Mutyala](https://github.com/chaitanya-mutyala) |
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🛠️ Setup and Installation
+
+### **Prerequisites**
+- Node.js (v18+)
+- npm or yarn
+
+### **Installation Steps**
+```bash
+# Clone the repository
+git clone [YOUR_REPO_URL]
+cd talentflow
+
+# Install dependencies
+npm install requirements
+# If dependency errors occur, use:
+
+
+# Start development server
+npm run dev
+```
+Your app should now be running at **http://localhost:5173** 🚀
+
+---
+
+## ⚙️ Technical Decisions and Architecture
+
+The application architecture emphasizes **robustness**, **testability**, and **offline-first reliability**.
+
+| Component | Technology / Library | Rationale |
+|------------|----------------------|------------|
+| **Local Persistence** | Dexie.js (IndexedDB) | Chosen for its promise-based API over IndexedDB, providing atomic operations and local data persistence. |
+| **API Simulation** | MSW (Mock Service Worker) | Simulates REST APIs, intercepting requests and providing IndexedDB data. Injects 200–1200 ms latency and 5–10% random write errors for realism. |
+| **State Management** | TanStack Query (React Query) | Handles data fetching, caching, and optimistic updates with rollback for reordering operations. |
+| **Drag & Drop** | @dnd-kit | Implements reordering and candidate Kanban transitions with modern DnD support. |
+| **Data Handling** | react-window | Virtualized list for efficient rendering of 1,000+ candidate records. |
+
+---
+
+## 🧠 Core Feature Implementation Summary
+
+### **A. Jobs Board**
+- **List & Filtering** – Implements pagination, search, and tag-based filters.
+- **CRUD Operations** – Add/Edit/Archive/Unarchive jobs via modal; validates unique slug and title.
+- **Reordering with Rollback** – Drag-and-drop supported with optimistic updates and rollback on failure.
+- **Deep Linking** – Supports navigation via `/jobs/:jobId`.
+
+### **B. Candidates Flow**
+- **Virtualized List** – Displays 1,000+ seeded candidates efficiently; supports search and stage-based filters.
+- **Kanban Board** – Drag-and-drop transitions between stages: *applied → screen → tech → offer → hired → rejected*.
+- **Profile Route** – `/candidates/:id` shows full details and timeline.
+
+### **C. Assessments Flow**
+- **Assessment Builder** – Dual-pane system to create HR assessments with various question types (choice, text, numeric, file upload).
+- **Persistence** – Stores both assessment structure and responses in Dexie (IndexedDB).
+- **Form Runtime** – Enforces client-side validation (required fields, numeric ranges, max length).  
+
+---
+
+## 🧩 Technical Challenges and Resolutions
+
+### **1. MSW/Dexie Synchronization (Race Condition)**
+- **Issue:** MSW intercepted API calls before Dexie completed initialization, causing `TypeError: Cannot read properties of undefined (reading 'get')`.
+- **Fix:** Introduced `ensureDbOpen()` helper with `await db.open()` at the start of every MSW handler (`jobHandlers.js`, `candidateHandlers.js`, and `assessmentHandlers.js`), ensuring database readiness before queries.
+
+### **2. Dependency Compatibility**
+- **Issue:** React 18 broke compatibility with `react-beautiful-dnd`.
+- **Fix:** Replaced with the stable, performant **@dnd-kit** library for modern React versions.
+
+---
+
+## 🧰 Tech Stack Summary
+
+- **Frontend:** React (Vite)
+- **Local Database:** Dexie.js (IndexedDB)
+- **Mock API Layer:** MSW
+- **Data Fetching:** TanStack Query (React Query)
+- **Drag & Drop:** @dnd-kit
+- **Virtualized Rendering:** react-window
+- **Styling:** Tailwind CSS
+
+---
+
+## 🤝 Contribution
+
+Contributions are welcome!  
+Feel free to **fork** this repository and submit a **pull request** for new features, bug fixes, or improvements.
+
+---
+
+## 📜 License
+
+This project is released under the **MIT License**.
+
+---
+✨ *Crafted with care as part of a React technical assignment to simulate a full hiring workflow.*
