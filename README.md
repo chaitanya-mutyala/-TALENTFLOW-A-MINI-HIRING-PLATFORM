@@ -37,6 +37,7 @@ cd talentflow
 #@tanstack/react-query
 #dexie
 #msw
+#@dnd-kit
 #tailwindcss)
 
 
@@ -71,7 +72,7 @@ The application architecture emphasizes **robustness**, **testability**, and **o
 
 ### **B. Candidates Flow**
 - **Virtualized List** – Displays 1,000+ seeded candidates efficiently; supports search and stage-based filters.
-- **Kanban Board** – Drag-and-drop transitions between stages: *applied → screen → tech → offer → hired → rejected*.
+- **Kanban Board** – Drag-and-drop transitions between stages: *applied → screen  → offer → hired → rejected*.
 - **Profile Route** – `/candidates/:id` shows full details and timeline.
 
 ### **C. Assessments Flow**
@@ -117,4 +118,4 @@ Feel free to **fork** this repository and submit a **pull request** for new feat
 This project is released under the **MIT License**.
 
 ---
-✨ *Crafted with care as part of a React technical assignment to simulate a full hiring workflow.*
+✨ *Crafted with care as part of a React technical assignment to simulate a full hiring workflow for ENTNT.*
