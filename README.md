@@ -27,12 +27,17 @@ All data is stored locally using **IndexedDB** (via Dexie.js), and network reque
 ### **Installation Steps**
 ```bash
 # Clone the repository
-git clone [YOUR_REPO_URL]
+git clone [https://github.com/chaitanya-mutyala/-TALENTFLOW-A-MINI-HIRING-PLATFORM]
 cd talentflow
 
 # Install dependencies
-npm install requirements
-# If dependency errors occur, use:
+#pip install -r requirements.txt (deleted requirements.txt due to vercel running it install following
+#react-dom
+#react-router-dom
+#@tanstack/react-query
+#dexie
+#msw
+#tailwindcss)
 
 
 # Start development server
